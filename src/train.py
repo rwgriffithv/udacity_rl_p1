@@ -16,11 +16,11 @@ def train(banana_bin_path):
     REQ_AVG_SCORE = 13
     # training constants
     REPBUF_CAPCITY = int(1e5)
-    LEARNING_RATE = 0.001 # small due to frequency of gradient steps
+    LEARNING_RATE = 0.0003 # small due to frequency of gradient steps
     DISCOUNT_FACTOR = 1
-    POLYAK_FACTOR = 0.999 # very large due to frequency of gradient steps
+    POLYAK_FACTOR = 0.999 # large due to frequency of gradient steps
     NUM_GRAD_STEPS_PER_UPDATE = 1
-    BATCH_SIZE = 256
+    BATCH_SIZE = 64
     K = 3 # number of simulation steps per RL algorithm step
     EPSILON_MIN = 0.1
     EPSILON_MAX = 1.0

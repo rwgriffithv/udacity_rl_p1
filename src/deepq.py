@@ -53,7 +53,7 @@ class DeepQ:
             q_val_probs = self.qnet(qnet_in).to(self.dev_cpu).numpy()
         self.qnet.train(True)
         # epsilon greedy
-        if np.random.random() > epsilon:
+        if np.random.random() >= epsilon:
             return int(np.argmax(q_val_probs))
         else:
             return int(np.random.randint(q_val_probs.size))
