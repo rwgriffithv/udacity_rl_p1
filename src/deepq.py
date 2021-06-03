@@ -37,7 +37,7 @@ class DeepQ:
             self.optimizer.zero_grad()
             self.qnet.train(True) # ensure qnet is training so back propogation can occur
             # q_vals according to sampled action taken from sampled states
-            q_vals = self.qnet(states).gather(-1, actions.type(torch.int64))
+            q_vals = torch.gather(self.qnet(states), -1, actions.type(torch.int64))
             targ_q_vals = torch.unsqueeze(torch.max(self.target_qnet(next_states), axis=-1)[0], dim=-1) # taking the maximum of the target q values
             discounted_targ_q_vals = self.discount_factor * targ_q_vals
             # calculate MSE loss and perform gradient step

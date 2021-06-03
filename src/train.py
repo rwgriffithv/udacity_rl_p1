@@ -35,7 +35,7 @@ def train(banana_bin_path):
     action_size = env.brains[brain_name].vector_action_space_size
     
     # build sequential artificial neural networks for the q-function and target q-function
-    state_size = env_state_size + 1 # make states that include previous action id
+    state_size = env_state_size + action_size # make states that include previous action one-hot encoding
     qnet = build_network(state_size, action_size)
     target_qnet = build_network(state_size, action_size) # target q network
 
@@ -50,14 +50,14 @@ def train(banana_bin_path):
     while replay_buf.size < int(REPBUF_PREFILL_RATIO * REPBUF_CAPCITY):
         num_rand_episodes += 1
         env_info = env.reset(train_mode=True)[brain_name]
-        prev_action = 0
-        state = [*env_info.vector_observations[0], prev_action] # including action id in state
+        state = [*env_info.vector_observations[0]] + ([0] * action_size) # including action one hot encoding in state
         while True:
             action = np.random.randint(action_size)
             env_info = env.step(action)[brain_name]
             reward = env_info.rewards[0]
             terminal = 1 if env_info.local_done[0] else 0
-            next_state = [*env_info.vector_observations[0], action] # including action id in state
+            next_state = [*env_info.vector_observations[0]] + ([0] * action_size) # including action id in state
+            next_state[state_size - action_size + action] = 1
             replay_buf.insert([Transition(state, action, reward, terminal, next_state)])
             state = next_state # roll over state
             if terminal: # check if episode is done
@@ -73,14 +73,14 @@ def train(banana_bin_path):
     while True:
         score = 0
         env_info = env.reset(train_mode=True)[brain_name]
-        prev_action = 0
-        state = [*env_info.vector_observations[0], prev_action] # including action id in state
+        state = [*env_info.vector_observations[0]] + ([0] * action_size)
         while True:
             action = deepq.get_action(state) # get action using softmax and random probability
             env_info = env.step(action)[brain_name]
             reward = env_info.rewards[0]
             terminal = 1 if env_info.local_done[0] else 0
-            next_state = [*env_info.vector_observations[0], 1.0 * action / (action_size - 1)] # including normalized action id in state
+            next_state = [*env_info.vector_observations[0]] + ([0] * action_size)
+            next_state[state_size - action_size + action] = 1
             replay_buf.insert([Transition(state, action, reward, terminal, next_state)])
             deepq.optimize(NUM_GRAD_STEPS_PER_UPDATE, BATCH_SIZE)
             state = next_state  # roll over state

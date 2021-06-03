@@ -8,14 +8,11 @@ import torch.cuda as tcuda
 def build_network(input_size, output_size):
     device = torch.device("cuda" if tcuda.is_available() else "cpu")
     net = tnn.Sequential(
-        tnn.Linear(input_size, 512),
+        tnn.Linear(input_size, 128),
         tnn.ReLU(),
-        tnn.Linear(512, 512),
+        tnn.Linear(128, 128),
         tnn.ReLU(),
-        tnn.Linear(512, 512),
-        tnn.ReLU(),
-        tnn.Linear(512, output_size),
-        tnn.ReLU()
+        tnn.Linear(128, output_size)
     )
     return net.float().to(device)
 
