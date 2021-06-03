@@ -6,7 +6,6 @@ import torch.nn as tnn
 import torch.optim as topt
 import torch.cuda as tcuda
 import numpy as np
-import random as rand
 
 # local imports
 from .nn import polyak_update
@@ -51,15 +50,10 @@ class DeepQ:
         qnet_in = torch.from_numpy(np.array(state)).float().to(self.dev_gpu) # convert state, state can be numpy array or list
         self.qnet.train(False) # evaluation/inference mode
         with torch.no_grad():
-            q_val_probs = torch.softmax(self.qnet(qnet_in), -1).to(self.dev_cpu).numpy()
+            q_val_probs = self.qnet(qnet_in).to(self.dev_cpu).numpy()
         self.qnet.train(True)
-        if rand.random() > epsilon:
+        # epsilon greedy
+        if np.random.random() > epsilon:
             return int(np.argmax(q_val_probs))
         else:
-            p = rand.uniform(0, 1)
-            cumulative_qvp = 0
-            for i, qvp in enumerate(q_val_probs):
-                cumulative_qvp += qvp
-                if p <= cumulative_qvp:
-                    return i
-            return len(q_val_probs) - 1
+            return int(np.random.randint(q_val_probs.size))

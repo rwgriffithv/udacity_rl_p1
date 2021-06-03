@@ -21,8 +21,10 @@ def train(banana_bin_path):
     DISCOUNT_FACTOR = 0.99
     POLYAK_FACTOR = 0.999 # very large due to frequency of gradient steps
     NUM_GRAD_STEPS_PER_UPDATE = 1
-    BATCH_SIZE = 2000
-    EPSILON = 0.05
+    BATCH_SIZE = 32
+    K = 3 # number of simulation steps per RL algorithm step
+    EPSILON_MIN = 0.1
+    EPSILON_DECAY = 0.9925
     
     # instantiate environment
     env = UnityEnvironment(file_name=banana_bin_path)
@@ -52,36 +54,46 @@ def train(banana_bin_path):
         state = env_info.vector_observations[0]
         while True:
             action = np.random.randint(action_size)
-            env_info = env.step(action)[brain_name]
-            reward = env_info.rewards[0]
-            terminal = 1 if env_info.local_done[0] else 0
+            reward = 0
+            for _ in range(K):
+                env_info = env.step(action)[brain_name]
+                reward += env_info.rewards[0]
+                terminal = 1 if env_info.local_done[0] else 0
+                if terminal: # check if episode is done
+                    break
             next_state = env_info.vector_observations[0]
             replay_buf.insert([Transition(state, action, reward, terminal, next_state)])
             state = next_state # roll over state
-            if terminal: # check if episode is done
+            if terminal:
                 break
         print("\rreplay buffer size [transitions]:\t%d" % replay_buf.size, end="")
 
     # actually train using actions specified by qnet
     deepq = DeepQ(qnet, target_qnet, replay_buf, LEARNING_RATE, DISCOUNT_FACTOR, POLYAK_FACTOR)
     scores = [] # sum of rewards throughout an episode, used to determine if the agent has solved the environment
+    epsilon = 1
     print("\n\ntraining....")
     while True:
         score = 0
         env_info = env.reset(train_mode=True)[brain_name]
         state = env_info.vector_observations[0]
         while True:
-            action = deepq.get_action(state, EPSILON)
-            env_info = env.step(action)[brain_name]
-            reward = env_info.rewards[0]
-            terminal = 1 if env_info.local_done[0] else 0
+            action = deepq.get_action(state, epsilon)
+            reward = 0
+            for _ in range(K):
+                env_info = env.step(action)[brain_name]
+                reward += env_info.rewards[0]
+                terminal = 1 if env_info.local_done[0] else 0
+                if terminal: # check if episode is done
+                    break
             next_state = env_info.vector_observations[0]
             replay_buf.insert([Transition(state, action, reward, terminal, next_state)])
             deepq.optimize(NUM_GRAD_STEPS_PER_UPDATE, BATCH_SIZE)
             state = next_state  # roll over state
             score += reward # accumulate score
-            if terminal: # check if episode is done
+            if terminal:
                 break
+        epsilon = max(epsilon * EPSILON_DECAY, EPSILON_MIN)
         # update scores, check for environment being solved
         scores.append(score)
         num_prev_scores = min(100, len(scores))
