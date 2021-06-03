@@ -40,13 +40,14 @@ class ReplayBuffer:
             self.size += 1
         # insert remaining transitions (randomly replacing prev trans)
         insert_trans = transitions[len(append_trans):]
-        idxs = rand.sample(range(self.capacity), len(insert_trans))
+        idxs = rand.sample(range(self.capacity + len(insert_trans)), len(insert_trans))
         for i, t in zip(idxs, insert_trans):
-            self.states[i] = t.state
-            self.actions[i] = t.action
-            self.rewards[i] = t.reward
-            self.terminals[i] = t.terminal
-            self.next_states[i] = t.next_state
+            if i < self.capacity:
+                self.states[i] = t.state
+                self.actions[i] = t.action
+                self.rewards[i] = t.reward
+                self.terminals[i] = t.terminal
+                self.next_states[i] = t.next_state
 
     def sample(self, batch_size):
         idxs = rand.choices(range(self.size), k=batch_size)
