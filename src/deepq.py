@@ -44,19 +44,8 @@ class DeepQ:
             loss = tnn.MSELoss()(q_vals, rewards + torch.mul((1 - terminals), discounted_targ_q_vals))
             loss.backward()
             self.optimizer.step()
-            
-            # if self.replay_buf.size > 5:
-                # print(self.replay_buf.states)
-                # print(actions)
-                # print(rewards)
-                # print(terminals)
-                # print(q_vals)
-                # print(targ_q_vals)
-                # print(loss)
-                # exit()
-
-        # polyak update target qnet
-        polyak_update(self.qnet, self.target_qnet, self.polyak_factor)
+            # polyak update target qnet
+            polyak_update(self.qnet, self.target_qnet, self.polyak_factor)
 
     def get_action(self, state):
         qnet_in = torch.from_numpy(np.array(state)).float().to(self.dev_gpu) # convert state, state can be numpy array or list

@@ -15,12 +15,13 @@ def train(banana_bin_path):
     # environment solution constants
     REQ_AVG_SCORE = 13
     # training constants
-    REPBUF_CAPCITY = int(1e5)
-    REPBUF_PREFILL_RATIO = 0.5
+    REPBUF_CAPCITY = int(1e6)
+    REPBUF_PREFILL_RATIO = 0.1
     LEARNING_RATE = 0.001
     DISCOUNT_FACTOR = 0.99
     POLYAK_FACTOR = 0.95
-    NUM_GRAD_STEPS_PER_UPDATE = 2
+    NUM_GRAD_STEPS_PER_UPDATE = 1
+    NUM_GRAD_STEPS_INIT = 1000
     BATCH_SIZE = 2000
     
     # instantiate environment
@@ -66,7 +67,7 @@ def train(banana_bin_path):
     # actually train using actions specified by qnet
     deepq = DeepQ(qnet, target_qnet, replay_buf, LEARNING_RATE, DISCOUNT_FACTOR, POLYAK_FACTOR)
     if REPBUF_PREFILL_RATIO > 0:
-        deepq.optimize(NUM_GRAD_STEPS_PER_UPDATE * 5, BATCH_SIZE) # initial training on random actions
+        deepq.optimize(NUM_GRAD_STEPS_INIT, BATCH_SIZE) # initial training on random actions
     scores = [] # sum of rewards throughout an episode, used to determine if the agent has solved the environment
     print("\n\ntraining....")
     while True:
@@ -79,7 +80,7 @@ def train(banana_bin_path):
             env_info = env.step(action)[brain_name]
             reward = env_info.rewards[0]
             terminal = 1 if env_info.local_done[0] else 0
-            next_state = [*env_info.vector_observations[0], action] # including action id in state
+            next_state = [*env_info.vector_observations[0], 1.0 * action / (action_size - 1)] # including normalized action id in state
             replay_buf.insert([Transition(state, action, reward, terminal, next_state)])
             deepq.optimize(NUM_GRAD_STEPS_PER_UPDATE, BATCH_SIZE)
             state = next_state  # roll over state
@@ -96,7 +97,9 @@ def train(banana_bin_path):
 
     env.close()
     # save models and plot final rewards curve
-    print("\n\nenvironment solved, saving model to qnet.pt")
+    print("\n\nenvironment solved, saving model to qnet.pt and scores to scores.csv")
+    with open("scores.csv", "w") as f:
+        f.write(str(scores)[0:-1])
     save(qnet.state_dict(), "qnet.pt")
 
 
