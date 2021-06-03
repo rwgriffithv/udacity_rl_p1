@@ -15,13 +15,15 @@ def train(banana_bin_path):
     # environment solution constants
     REQ_AVG_SCORE = 13
     # training constants
-    REPBUF_CAPCITY = int(1e5)
-    REPBUF_PREFILL_RATIO = 0.5
-    LEARNING_RATE = 0.0001 # very small due to frequency of gradient steps
+    REPBUF_CAPCITY = int(5e5)
+    REPBUF_PREFILL_SIZE = 2.5e4
+    LEARNING_RATE = 0.0003 # small due to frequency of gradient steps
     DISCOUNT_FACTOR = 0.99
     POLYAK_FACTOR = 0.999 # very large due to frequency of gradient steps
     NUM_GRAD_STEPS_PER_UPDATE = 1
-    BATCH_SIZE = 32
+    BATCH_SIZE_MIN = 32
+    BATCH_SIZE_MAX = 1024
+    BATCH_SIZE_INCREASE = 1.01
     K = 3 # number of simulation steps per RL algorithm step
     EPSILON_MIN = 0.1
     EPSILON_DECAY = 0.9925
@@ -46,9 +48,9 @@ def train(banana_bin_path):
     # prefill replay buffer with transitions collected from taking random actions
     # do not track scores here, qnet is not being used and is not training
     num_rand_episodes = 0
-    if REPBUF_PREFILL_RATIO > 0:
+    if REPBUF_PREFILL_SIZE > 0:
         print("\nprefilling replay buffer using random actions...")
-    while replay_buf.size < int(REPBUF_PREFILL_RATIO * REPBUF_CAPCITY):
+    while replay_buf.size < REPBUF_PREFILL_SIZE:
         num_rand_episodes += 1
         env_info = env.reset(train_mode=True)[brain_name]
         state = env_info.vector_observations[0]
@@ -72,6 +74,7 @@ def train(banana_bin_path):
     deepq = DeepQ(qnet, target_qnet, replay_buf, LEARNING_RATE, DISCOUNT_FACTOR, POLYAK_FACTOR)
     scores = [] # sum of rewards throughout an episode, used to determine if the agent has solved the environment
     epsilon = 1
+    batch_size = BATCH_SIZE_MIN
     print("\n\ntraining....")
     while True:
         score = 0
@@ -88,12 +91,13 @@ def train(banana_bin_path):
                     break
             next_state = env_info.vector_observations[0]
             replay_buf.insert([Transition(state, action, reward, terminal, next_state)])
-            deepq.optimize(NUM_GRAD_STEPS_PER_UPDATE, BATCH_SIZE)
+            deepq.optimize(NUM_GRAD_STEPS_PER_UPDATE, batch_size)
             state = next_state  # roll over state
             score += reward # accumulate score
             if terminal:
                 break
         epsilon = max(epsilon * EPSILON_DECAY, EPSILON_MIN)
+        batch_size = min(batch_size * BATCH_SIZE_INCREASE, BATCH_SIZE_MAX)
         # update scores, check for environment being solved
         scores.append(score)
         num_prev_scores = min(100, len(scores))
