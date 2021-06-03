@@ -20,6 +20,8 @@ def train(banana_bin_path):
     LEARNING_RATE = 0.001
     DISCOUNT_FACTOR = 0.99
     POLYAK_FACTOR = 0.95
+    NUM_GRAD_STEPS_PER_UPDATE = 2
+    BATCH_SIZE = 2000
     
     # instantiate environment
     env = UnityEnvironment(file_name=banana_bin_path)
@@ -42,9 +44,11 @@ def train(banana_bin_path):
     # prefill replay buffer with transitions collected from taking random actions
     # do not track scores here, qnet is not being used and is not training
     num_rand_episodes = 0
+    if REPBUF_PREFILL_RATIO > 0:
+        print("\nprefilling replay buffer using random actions...")
     while replay_buf.size < int(REPBUF_PREFILL_RATIO * REPBUF_CAPCITY):
         num_rand_episodes += 1
-        env_info = env.reset(train_mode=False)[brain_name]
+        env_info = env.reset(train_mode=True)[brain_name]
         prev_action = 0
         state = [*env_info.vector_observations[0], prev_action] # including action id in state
         while True:
@@ -57,12 +61,14 @@ def train(banana_bin_path):
             state = next_state # roll over state
             if terminal: # check if episode is done
                 break
-    print("executed %d episodes with random actions" % num_rand_episodes)
-    print("replay buffer prefilled with %d transitions" % replay_buf.size)
-    
+        print("\rreplay buffer size [transitions]:\t%d" % replay_buf.size, end="")
+
     # actually train using actions specified by qnet
     deepq = DeepQ(qnet, target_qnet, replay_buf, LEARNING_RATE, DISCOUNT_FACTOR, POLYAK_FACTOR)
+    if REPBUF_PREFILL_RATIO > 0:
+        deepq.optimize(NUM_GRAD_STEPS_PER_UPDATE * 5, BATCH_SIZE) # initial training on random actions
     scores = [] # sum of rewards throughout an episode, used to determine if the agent has solved the environment
+    print("\n\ntraining....")
     while True:
         score = 0
         env_info = env.reset(train_mode=True)[brain_name]
@@ -75,7 +81,7 @@ def train(banana_bin_path):
             terminal = 1 if env_info.local_done[0] else 0
             next_state = [*env_info.vector_observations[0], action] # including action id in state
             replay_buf.insert([Transition(state, action, reward, terminal, next_state)])
-            deepq.step() # apply gradient step and update target qnet
+            deepq.optimize(NUM_GRAD_STEPS_PER_UPDATE, BATCH_SIZE)
             state = next_state  # roll over state
             score += reward # accumulate score
             if terminal: # check if episode is done
@@ -88,13 +94,14 @@ def train(banana_bin_path):
         if avg_score > REQ_AVG_SCORE:
             break
 
+    env.close()
     # save models and plot final rewards curve
     print("\n\nenvironment solved, saving model to qnet.pt")
     save(qnet.state_dict(), "qnet.pt")
 
 
 if __name__ == "__main__":
-    if len(sys.argv != 2):
+    if len(sys.argv) != 2:
         print("\nERROR:\tinvalid arguments\nUSAGE:\ttrain.py <unity_environment_executable>\n")
     else:
         train(sys.argv[1])

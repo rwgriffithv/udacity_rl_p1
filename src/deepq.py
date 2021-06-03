@@ -1,8 +1,11 @@
 # Deep Q-Learning With Experience Replay (V. Mnih et al.)
 
+from numpy.lib.polynomial import poly
 import torch
 import torch.nn as tnn
 import torch.optim as topt
+import torch.cuda as tcuda
+import numpy as np
 import random as rand
 
 # local imports
@@ -13,33 +16,54 @@ class DeepQ:
     def __init__(self, qnet, target_qnet, replay_buf, learning_rate=0.001, discount_factor=0.99, polyak_factor=0.95):
         self.qnet = qnet
         self.target_qnet = target_qnet
+        # set target_qnet to qnet's weights
+        polyak_update(self.qnet, self.target_qnet, 0)
         self.replay_buf = replay_buf
-        self.discount_factor = discount_factor
-        self.polyak_factor = polyak_factor
         # initialize optimizer
         self.optimizer = topt.Adam(qnet.parameters(), learning_rate)
+        # get devices
+        self.dev_gpu = torch.device("cuda" if tcuda.is_available() else "cpu")
+        self.dev_cpu = torch.device("cpu")
+        # create constant tensors
+        self.discount_factor = torch.tensor(discount_factor, dtype=torch.float32, device=self.dev_gpu)
+        self.polyak_factor = torch.tensor(polyak_factor, dtype=torch.float32, device=self.dev_gpu)
 
-    def step(self, batch_size):
-        # get sample batch
-        states, actions, rewards, terminals, next_states = self.replay_buf.sample(batch_size)
-        # zero/clear gradients
-        self.optimizer.zero_grad()
-        self.qnet.train(True) # ensure qnet is training so back propogation can occur
-        # q_vals according to sampled action taken from sampled states
-        q_vals = self.qnet(states).gather(-1, actions)
-        targ_q_vals = torch.max(self.target_qnet(next_states), -1)
-        discounted_targ_q_vals = self.discount_factor * targ_q_vals
-        # calculate MSE loss and perform gradient step
-        loss = tnn.MSELoss()(q_vals, rewards + (1 - terminals) * discounted_targ_q_vals)
-        loss.backward()
-        self.optimizer.step()
+    def optimize(self, num_steps=1, batch_size=1000):
+        for _ in range(num_steps): # number of gradient steps
+            # get sample batch, convert numpy arrays to tensors and send to GPU
+            batch_tuple = self.replay_buf.sample(batch_size)
+            states, actions, rewards, terminals, next_states = [torch.from_numpy(b).float().to(self.dev_gpu) for b in batch_tuple]
+            # zero/clear gradients
+            self.optimizer.zero_grad()
+            self.qnet.train(True) # ensure qnet is training so back propogation can occur
+            # q_vals according to sampled action taken from sampled states
+            q_vals = self.qnet(states).gather(-1, actions.type(torch.int64))
+            targ_q_vals = torch.unsqueeze(torch.max(self.target_qnet(next_states), axis=-1)[0], dim=-1) # taking the maximum of the target q values
+            discounted_targ_q_vals = self.discount_factor * targ_q_vals
+            # calculate MSE loss and perform gradient step
+            loss = tnn.MSELoss()(q_vals, rewards + torch.mul((1 - terminals), discounted_targ_q_vals))
+            loss.backward()
+            self.optimizer.step()
+            
+            # if self.replay_buf.size > 5:
+                # print(self.replay_buf.states)
+                # print(actions)
+                # print(rewards)
+                # print(terminals)
+                # print(q_vals)
+                # print(targ_q_vals)
+                # print(loss)
+                # exit()
+
         # polyak update target qnet
-        polyak_update(self.target_qnet, self.qnet, self.polyak_factor)
+        polyak_update(self.qnet, self.target_qnet, self.polyak_factor)
 
     def get_action(self, state):
-        self.qnet.train(False) # evaluation/inference mode
-        q_val_probs = torch.softmax(self.qnet(state), -1).numpy()
-        self.qnet.train(True)
+        qnet_in = torch.from_numpy(np.array(state)).float().to(self.dev_gpu) # convert state, state can be numpy array or list
+        # self.qnet.train(False) # evaluation/inference mode
+        with torch.no_grad():
+            q_val_probs = torch.softmax(self.qnet(qnet_in), -1).to(self.dev_cpu).numpy()
+        # self.qnet.train(True)
         p = rand.uniform(0, 1)
         cumulative_qvp = 0
         for i, qvp in enumerate(q_val_probs):

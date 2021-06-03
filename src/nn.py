@@ -1,22 +1,23 @@
 # neural network utility functions
 
-import torch.cuda as tc
+import torch
 import torch.nn as tnn
-from torch.nn.modules.activation import ReLU
+import torch.cuda as tcuda
 
 
 def build_network(input_size, output_size):
-    device = "cuda" if tc.is_available() else "cpu"
+    device = torch.device("cuda" if tcuda.is_available() else "cpu")
     net = tnn.Sequential(
-        tnn.Flatten(),
         tnn.Linear(input_size, 256),
         tnn.ReLU(),
-        tnn.Linear(256, 256),
+        tnn.Linear(256, 512),
+        tnn.ReLU(),
+        tnn.Linear(512, 256),
         tnn.ReLU(),
         tnn.Linear(256, output_size),
         tnn.ReLU()
-    ).to(device)
-    return net
+    )
+    return net.float().to(device)
 
 def polyak_update(net, target_net, polyak_factor):
     for param, t_param in zip(net.parameters(), target_net.parameters()):
