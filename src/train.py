@@ -21,14 +21,14 @@ def train(banana_bin_path):
     POLYAK_FACTOR = 0.999 # large due to frequency of gradient steps
     NUM_GRAD_STEPS_PER_UPDATE = 1
     BATCH_SIZE = 64
-    K = 3 # number of simulation steps per RL algorithm step
-    EPSILON_MIN = 0.1
+    K = 2 # number of simulation steps per RL algorithm step
+    EPSILON_MIN = 0.05
     EPSILON_MAX = 1.0
     EPSILON_DECAY = 0.99
     # epsilon refreshing to encourage exploration after standard epsilon annealing
-    EPSILON_REFRESH = 0.5 # for refreshing the value of epsilon
+    EPSILON_REFRESH = 2 * EPSILON_MIN # for refreshing the value of epsilon
     STAGNANT_EPS_TO_REFRESH = 50 # number of sequential stagnant episodes that prompts an epsilon refresh
-    SCORE_DECREASE_TO_REFRESH = 0.5 # average score decrease that prompts an epsilon refresh
+    AVG_SCORE_DECREASE_TO_REFRESH = 0.25 # average score decrease that prompts an epsilon refresh
     
     # instantiate environment
     env = UnityEnvironment(file_name=banana_bin_path)
@@ -52,8 +52,8 @@ def train(banana_bin_path):
     scores = [] # sum of rewards throughout an episode, used to determine if the agent has solved the environment
     epsilon = EPSILON_MAX
     stagnation_count = 0
-    max_score = int(-1e6)
-    print("\n\ntraining....")
+    max_avg_score = int(-1e6)
+    print("\n\ntraining (K=%d, LR=%f, BS=%d) ...." % (K, LEARNING_RATE, BATCH_SIZE))
     while True:
         score = 0
         env_info = env.reset(train_mode=True)[brain_name]
@@ -74,23 +74,23 @@ def train(banana_bin_path):
             score += reward # accumulate score
             if terminal:
                 break
-        # update scores
-        max_score = max(score, max_score)
-        scores.append(score)
-        # check for stagnation, update epsilon
-        score_diff = max_score - score
-        stagnation_count = 0 if score_diff == 0 else stagnation_count + 1
-        if epsilon == EPSILON_MIN and (stagnation_count == STAGNANT_EPS_TO_REFRESH or score_diff >= SCORE_DECREASE_TO_REFRESH):
-            epsilon = EPSILON_REFRESH
-            stagnation_count = 0
-        else:
-            epsilon = max(epsilon * EPSILON_DECAY, EPSILON_MIN)
         # check for environment being solved
+        scores.append(score)
         num_prev_scores = min(100, len(scores))
         avg_score = sum(scores[-num_prev_scores:]) / num_prev_scores
         print("\raverage score for episodes [%d, %d):\t%f" % (len(scores) - num_prev_scores, len(scores), avg_score), end="")
         if avg_score > REQ_AVG_SCORE:
             break
+        # update epsilon according to stagnation or average score decline
+        max_avg_score = max(max_avg_score, avg_score)
+        score_diff = max_avg_score - avg_score
+        stagnation_count = 0 if score_diff == 0 else stagnation_count + 1
+        if epsilon == EPSILON_MIN and (stagnation_count == STAGNANT_EPS_TO_REFRESH or score_diff >= AVG_SCORE_DECREASE_TO_REFRESH):
+            print("\nrefreshing epsilon to %f,\tmax average score: %d\n" % (EPSILON_REFRESH, max_avg_score))
+            epsilon = EPSILON_REFRESH
+            stagnation_count = 0
+        else:
+            epsilon = max(epsilon * EPSILON_DECAY, EPSILON_MIN)
 
     env.close()
     # save models and plot final rewards curve
