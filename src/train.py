@@ -97,7 +97,7 @@ def train(banana_bin_path):
             if terminal:
                 break
         epsilon = max(epsilon * EPSILON_DECAY, EPSILON_MIN)
-        batch_size = min(batch_size * BATCH_SIZE_INCREASE, BATCH_SIZE_MAX)
+        batch_size = int(min(batch_size * BATCH_SIZE_INCREASE, BATCH_SIZE_MAX))
         # update scores, check for environment being solved
         scores.append(score)
         num_prev_scores = min(100, len(scores))
