@@ -86,7 +86,7 @@ def train(banana_bin_path):
         score_diff = max_avg_score - avg_score
         stagnation_count = 0 if score_diff == 0 else stagnation_count + 1
         if epsilon == EPSILON_MIN and (stagnation_count == STAGNANT_EPS_TO_REFRESH or score_diff >= AVG_SCORE_DECREASE_TO_REFRESH):
-            print("\nrefreshing epsilon to %f,\tmax average score: %d\n" % (EPSILON_REFRESH, max_avg_score))
+            print("\nrefreshing epsilon to %f,\tmax average score: %f\n" % (EPSILON_REFRESH, max_avg_score))
             epsilon = EPSILON_REFRESH
             stagnation_count = 0
         else:
