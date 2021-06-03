@@ -15,14 +15,14 @@ def train(banana_bin_path):
     # environment solution constants
     REQ_AVG_SCORE = 13
     # training constants
-    REPBUF_CAPCITY = int(1e6)
-    REPBUF_PREFILL_RATIO = 0.1
-    LEARNING_RATE = 0.001
+    REPBUF_CAPCITY = int(1e5)
+    REPBUF_PREFILL_RATIO = 0.5
+    LEARNING_RATE = 0.0001 # very small due to frequency of gradient steps
     DISCOUNT_FACTOR = 0.99
-    POLYAK_FACTOR = 0.95
+    POLYAK_FACTOR = 0.999 # very large due to frequency of gradient steps
     NUM_GRAD_STEPS_PER_UPDATE = 1
-    NUM_GRAD_STEPS_INIT = 1000
     BATCH_SIZE = 2000
+    EPSILON = 0.05
     
     # instantiate environment
     env = UnityEnvironment(file_name=banana_bin_path)
@@ -31,11 +31,10 @@ def train(banana_bin_path):
     
     # get environment state and action size
     env_info = env.reset(train_mode=True)[brain_name]
-    env_state_size = len(env_info.vector_observations[0])
+    state_size = len(env_info.vector_observations[0])
     action_size = env.brains[brain_name].vector_action_space_size
     
     # build sequential artificial neural networks for the q-function and target q-function
-    state_size = env_state_size + action_size # make states that include previous action one-hot encoding
     qnet = build_network(state_size, action_size)
     target_qnet = build_network(state_size, action_size) # target q network
 
@@ -50,14 +49,13 @@ def train(banana_bin_path):
     while replay_buf.size < int(REPBUF_PREFILL_RATIO * REPBUF_CAPCITY):
         num_rand_episodes += 1
         env_info = env.reset(train_mode=True)[brain_name]
-        state = [*env_info.vector_observations[0]] + ([0] * action_size) # including action one hot encoding in state
+        state = env_info.vector_observations[0]
         while True:
             action = np.random.randint(action_size)
             env_info = env.step(action)[brain_name]
             reward = env_info.rewards[0]
             terminal = 1 if env_info.local_done[0] else 0
-            next_state = [*env_info.vector_observations[0]] + ([0] * action_size) # including action id in state
-            next_state[state_size - action_size + action] = 1
+            next_state = env_info.vector_observations[0]
             replay_buf.insert([Transition(state, action, reward, terminal, next_state)])
             state = next_state # roll over state
             if terminal: # check if episode is done
@@ -66,21 +64,18 @@ def train(banana_bin_path):
 
     # actually train using actions specified by qnet
     deepq = DeepQ(qnet, target_qnet, replay_buf, LEARNING_RATE, DISCOUNT_FACTOR, POLYAK_FACTOR)
-    if REPBUF_PREFILL_RATIO > 0:
-        deepq.optimize(NUM_GRAD_STEPS_INIT, BATCH_SIZE) # initial training on random actions
     scores = [] # sum of rewards throughout an episode, used to determine if the agent has solved the environment
     print("\n\ntraining....")
     while True:
         score = 0
         env_info = env.reset(train_mode=True)[brain_name]
-        state = [*env_info.vector_observations[0]] + ([0] * action_size)
+        state = env_info.vector_observations[0]
         while True:
-            action = deepq.get_action(state) # get action using softmax and random probability
+            action = deepq.get_action(state, EPSILON)
             env_info = env.step(action)[brain_name]
             reward = env_info.rewards[0]
             terminal = 1 if env_info.local_done[0] else 0
-            next_state = [*env_info.vector_observations[0]] + ([0] * action_size)
-            next_state[state_size - action_size + action] = 1
+            next_state = env_info.vector_observations[0]
             replay_buf.insert([Transition(state, action, reward, terminal, next_state)])
             deepq.optimize(NUM_GRAD_STEPS_PER_UPDATE, BATCH_SIZE)
             state = next_state  # roll over state
