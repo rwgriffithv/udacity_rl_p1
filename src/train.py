@@ -13,6 +13,7 @@ from .deepq import DeepQ
 
 def train(banana_bin_path):
     # environment solution constants
+    MAX_NUM_EPISODES = 2000 # must solve environment before this
     REQ_AVG_SCORE = 13
     # training constants
     REPBUF_CAPCITY = int(1e5)
@@ -22,7 +23,7 @@ def train(banana_bin_path):
     NUM_GRAD_STEPS_PER_UPDATE = 1
     BATCH_SIZE = 64
     K = 2 # number of simulation steps per RL algorithm step
-    EPSILON_MIN = 0.05
+    EPSILON_MIN = 0.075
     EPSILON_MAX = 1.0
     EPSILON_DECAY = 0.99
     # epsilon refreshing to encourage exploration after standard epsilon annealing
@@ -54,7 +55,7 @@ def train(banana_bin_path):
     stagnation_count = 0
     max_avg_score = int(-1e6)
     print("\n\ntraining (K=%d, LR=%f, BS=%d) ...." % (K, LEARNING_RATE, BATCH_SIZE))
-    while True:
+    while len(scores) < MAX_NUM_EPISODES:
         score = 0
         env_info = env.reset(train_mode=True)[brain_name]
         state = env_info.vector_observations[0]
@@ -89,6 +90,7 @@ def train(banana_bin_path):
             print("\nrefreshing epsilon to %f,\tmax average score: %f\n" % (EPSILON_REFRESH, max_avg_score))
             epsilon = EPSILON_REFRESH
             stagnation_count = 0
+            max_avg_score = avg_score # goal is now to surpass this value (and hopefully surpass previous max as well)
         else:
             epsilon = max(epsilon * EPSILON_DECAY, EPSILON_MIN)
 
