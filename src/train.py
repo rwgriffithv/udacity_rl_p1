@@ -11,7 +11,7 @@ from .replay import Transition, ReplayBuffer
 from .deepq import DeepQ
 
 
-def train(banana_bin_path):
+def train(executable_path):
     # environment solution constants
     MAX_NUM_EPISODES = 2000 # must solve environment before this
     REQ_AVG_SCORE = 13
@@ -31,7 +31,7 @@ def train(banana_bin_path):
     AVG_SCORE_DECREASE_TO_REFRESH = 0.5 # average score decrease that prompts an epsilon refresh
     
     # instantiate environment
-    env = UnityEnvironment(file_name=banana_bin_path)
+    env = UnityEnvironment(file_name=executable_path)
     # get default brain name
     brain_name = env.brain_names[0]
     
