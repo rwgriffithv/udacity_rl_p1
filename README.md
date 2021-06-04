@@ -1,9 +1,10 @@
 # Udacity Deep Reinforcement Learning Project 1 Submission
+Robert Griffith
 
 ## Project Details
 
-The goal of this project was to use reinforcement learning techniques to train  
-an agent to navigate and collect bananas in a provided UnityEnvironment  
+The goal of this project was to use deep reinforcement learning techniques to  
+train an agent to navigate and collect bananas in a provided UnityEnvironment  
 following the architecture of the open-source Unity plugin **Unity Machine  
 Learning Agents (ML-Agents)**. The Banana Collector environment is provided  
 by Udacity, and is a modified version of one of the environments in the  
@@ -27,6 +28,7 @@ discrete actions available for the agent to select at each timestep:
 This task is episodic, and the environment is considered "solved" upon the agent  
 earning an average score of +13 over 100 consecutive episodes.
 
+
 ## Repository Contents
 
 | directory | contents |
@@ -38,6 +40,7 @@ earning an average score of +13 over 100 consecutive episodes.
 | ----------- | ----------- |
 | deepq.py | Deep Q-Learning class (gradient step and action inference) |
 | nn.py | Neural network utility functions (model definition, polyak update) |
+| plot.py | Plotting function for scores.csv output fron training routine |
 | replay.py | Experience replay buffer and (S, A, R, T, S') transition classes
 | train.py | Main function for training an agent to solve a UnityEnvironment |
 
@@ -53,6 +56,7 @@ a command line argument when run as the main script. This is done to prevent the
 need to modify the file when running on various machines where the executable  
 path will naturally differ.
 
+
 ## Getting Started
 
 ### Step 1: Clone the DRLND Repository
@@ -63,7 +67,7 @@ as OpenAI gym is not utilized and neither are any IPython notebooks.
 **The required steps 1, 3** will install PyTorch, the ML-Agents toolkit, and other  
 dependencies.
 
-## Step 2: Download the Unity Environment
+### Step 2: Download the Unity Environment
 You will **not** need to install Unity; only the executable itself is required.  
 You will need to select the environment binary that matches your operating system:
 * Linux: [click here](https://s3-us-west-1.amazonaws.com/udacity-drlnd/P1/Banana/Banana_Linux.zip)
@@ -80,6 +84,7 @@ installation specific to a particular CUDA toolkit version `XY.Z`, within Anacon
 run the following command: 
 
 `conda install pytorch cudatoolkit=XY.Z -c pytorch`
+
 
 ## Instructions
 
