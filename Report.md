@@ -1,6 +1,6 @@
 # Udacity Deep Reinforcement Learning Project 1 Report
 Robert Griffith  
-3 June 2021
+4 June 2021
 
 
 ## Project Description
@@ -110,6 +110,18 @@ here:
 * *&epsilon;* decay: **0.99** (*&epsilon;<sub>t+1</sub>* = 0.99 * *&epsilon;<sub>t</sub>*)
 * *K* (number of simulation steps per algorithm step, see paper): **2**
 
+The neural network architecture used for the Q-function *Q<sub>&theta;</sub>* is a sequential multilayer  
+perceptron with layers only consisting of "linear" layers and ReLU activation layers.  
+Each linear layer is comprised of parameters "weights" *w* and "biases" *b*, where  
+given an input *i* the layer outputs _w*i + b_ where the weights and the input must  
+match their final and first dimensions respectively, and the biases are added  
+by an elementwise broadcast along the final dimensions of _w*i_. The layer order used  
+is provided as follows:
+* Linear layer with weights of shape (37, 128), biases of shape (128,)
+* ReLU activation layer
+* Linear layer with weights of shape (128, 128), biases of shape (128,)
+* ReLU activation layer
+* Linear layer with weights of shape (128, 4), biases of shape (4,)
 
 ## Plot of Rewards
 ![reward plots](./model/plot.png)
