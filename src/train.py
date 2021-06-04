@@ -21,9 +21,9 @@ def train(banana_bin_path):
     DISCOUNT_FACTOR = 1
     POLYAK_FACTOR = 0.995 # large due to frequency of gradient steps
     NUM_GRAD_STEPS_PER_UPDATE = 1
-    BATCH_SIZE = 64
+    BATCH_SIZE = 128
     K = 2 # number of simulation steps per RL algorithm step
-    EPSILON_MIN = 0.075
+    EPSILON_MIN = 0.05
     EPSILON_MAX = 1.0
     EPSILON_DECAY = 0.99
     # epsilon refreshing to encourage exploration after standard epsilon annealing
