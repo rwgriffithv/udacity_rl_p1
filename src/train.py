@@ -16,7 +16,7 @@ def train(banana_bin_path):
     MAX_NUM_EPISODES = 2000 # must solve environment before this
     REQ_AVG_SCORE = 13
     # training constants
-    REPBUF_CAPCITY = int(1.5e5)
+    REPBUF_CAPCITY = int(1e6)
     LEARNING_RATE = 0.0003 # small due to frequency of gradient steps
     DISCOUNT_FACTOR = 1
     POLYAK_FACTOR = 0.995 # large due to frequency of gradient steps
@@ -28,7 +28,7 @@ def train(banana_bin_path):
     EPSILON_DECAY = 0.99
     # epsilon refreshing to encourage exploration after standard epsilon annealing
     EPSILON_REFRESH = 2 * EPSILON_MIN # for refreshing the value of epsilon
-    AVG_SCORE_DECREASE_TO_REFRESH = 0.4 # average score decrease that prompts an epsilon refresh
+    AVG_SCORE_DECREASE_TO_REFRESH = 0.5 # average score decrease that prompts an epsilon refresh
     
     # instantiate environment
     env = UnityEnvironment(file_name=banana_bin_path)
