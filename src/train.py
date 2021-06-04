@@ -16,18 +16,18 @@ def train(banana_bin_path):
     MAX_NUM_EPISODES = 2000 # must solve environment before this
     REQ_AVG_SCORE = 13
     # training constants
-    REPBUF_CAPCITY = int(1e6)
+    REPBUF_CAPCITY = int(1e5)
     LEARNING_RATE = 0.0003 # small due to frequency of gradient steps
     DISCOUNT_FACTOR = 1
     POLYAK_FACTOR = 0.995 # large due to frequency of gradient steps
     NUM_GRAD_STEPS_PER_UPDATE = 1
     BATCH_SIZE = 128
     K = 2 # number of simulation steps per RL algorithm step
-    EPSILON_MIN = 0.05
+    EPSILON_MIN = 0.01
     EPSILON_MAX = 1.0
     EPSILON_DECAY = 0.99
     # epsilon refreshing to encourage exploration after standard epsilon annealing
-    EPSILON_REFRESH = 2 * EPSILON_MIN # for refreshing the value of epsilon
+    EPSILON_REFRESH = 0.05 # for refreshing the value of epsilon
     AVG_SCORE_DECREASE_TO_REFRESH = 0.5 # average score decrease that prompts an epsilon refresh
     
     # instantiate environment
@@ -97,7 +97,7 @@ def train(banana_bin_path):
     # save models and plot final rewards curve
     print("\n\nenvironment solved, saving model to qnet.pt and scores to scores.csv")
     with open("scores.csv", "w") as f:
-        f.write(str(scores)[0:-1])
+        f.write(str(scores)[1:-1])
     save(qnet.state_dict(), "qnet.pt")
 
 
