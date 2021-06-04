@@ -28,7 +28,6 @@ def train(banana_bin_path):
     EPSILON_DECAY = 0.99
     # epsilon refreshing to encourage exploration after standard epsilon annealing
     EPSILON_REFRESH = 2 * EPSILON_MIN # for refreshing the value of epsilon
-    STAGNANT_EPS_TO_REFRESH = 50 # number of sequential stagnant episodes that prompts an epsilon refresh
     AVG_SCORE_DECREASE_TO_REFRESH = 0.4 # average score decrease that prompts an epsilon refresh
     
     # instantiate environment
@@ -86,11 +85,11 @@ def train(banana_bin_path):
         max_avg_score = max(max_avg_score, avg_score)
         score_diff = max_avg_score - avg_score
         stagnation_count = 0 if epsilon != EPSILON_MIN or score_diff == 0 else stagnation_count + 1
-        if epsilon == EPSILON_MIN and (stagnation_count == STAGNANT_EPS_TO_REFRESH or score_diff >= AVG_SCORE_DECREASE_TO_REFRESH):
+        if epsilon == EPSILON_MIN and (stagnation_count == 100 or score_diff >= AVG_SCORE_DECREASE_TO_REFRESH):
             print("\nrefreshing epsilon to %f,\tmax average score: %f\n" % (EPSILON_REFRESH, max_avg_score))
             epsilon = EPSILON_REFRESH
             stagnation_count = 0
-            max_avg_score = avg_score # goal is now to surpass this value (and hopefully surpass previous max as well)
+            max_avg_score = -1e6 # goal is now to surpass a newly found max average (and hopefully surpass previous max as well)
         else:
             epsilon = max(epsilon * EPSILON_DECAY, EPSILON_MIN)
 
