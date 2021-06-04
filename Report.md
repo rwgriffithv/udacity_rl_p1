@@ -110,7 +110,7 @@ here:
 * *&epsilon;* decay: **0.99** (*&epsilon;<sub>t+1</sub>* = 0.99 * *&epsilon;<sub>t</sub>*)
 * *K* (number of simulation steps per algorithm step, see paper): **2**
 
-The neural network architecture used for the Q-function *Q<sub>&theta;</sub>* is a sequential multilayer  
+The neural network architecture used for the Q-function *Q<sub>&theta;</sub>* (and *Q<sub>&theta;'</sub>*) is a sequential multilayer  
 perceptron with layers only consisting of "linear" layers and ReLU activation layers.  
 Each linear layer is comprised of parameters "weights" *w* and "biases" *b*, where  
 given an input *i* the layer outputs _w*i + b_ where the weights and the input must  
