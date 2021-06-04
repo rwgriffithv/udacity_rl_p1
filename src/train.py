@@ -16,10 +16,10 @@ def train(banana_bin_path):
     MAX_NUM_EPISODES = 2000 # must solve environment before this
     REQ_AVG_SCORE = 13
     # training constants
-    REPBUF_CAPCITY = int(1e5)
+    REPBUF_CAPCITY = int(1.5e5)
     LEARNING_RATE = 0.0003 # small due to frequency of gradient steps
     DISCOUNT_FACTOR = 1
-    POLYAK_FACTOR = 0.999 # large due to frequency of gradient steps
+    POLYAK_FACTOR = 0.995 # large due to frequency of gradient steps
     NUM_GRAD_STEPS_PER_UPDATE = 1
     BATCH_SIZE = 64
     K = 2 # number of simulation steps per RL algorithm step
@@ -29,7 +29,7 @@ def train(banana_bin_path):
     # epsilon refreshing to encourage exploration after standard epsilon annealing
     EPSILON_REFRESH = 2 * EPSILON_MIN # for refreshing the value of epsilon
     STAGNANT_EPS_TO_REFRESH = 50 # number of sequential stagnant episodes that prompts an epsilon refresh
-    AVG_SCORE_DECREASE_TO_REFRESH = 0.25 # average score decrease that prompts an epsilon refresh
+    AVG_SCORE_DECREASE_TO_REFRESH = 0.4 # average score decrease that prompts an epsilon refresh
     
     # instantiate environment
     env = UnityEnvironment(file_name=banana_bin_path)
@@ -85,7 +85,7 @@ def train(banana_bin_path):
         # update epsilon according to stagnation or average score decline
         max_avg_score = max(max_avg_score, avg_score)
         score_diff = max_avg_score - avg_score
-        stagnation_count = 0 if score_diff == 0 else stagnation_count + 1
+        stagnation_count = 0 if epsilon != EPSILON_MIN or score_diff == 0 else stagnation_count + 1
         if epsilon == EPSILON_MIN and (stagnation_count == STAGNANT_EPS_TO_REFRESH or score_diff >= AVG_SCORE_DECREASE_TO_REFRESH):
             print("\nrefreshing epsilon to %f,\tmax average score: %f\n" % (EPSILON_REFRESH, max_avg_score))
             epsilon = EPSILON_REFRESH
